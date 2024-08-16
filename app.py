@@ -27,8 +27,7 @@ class SolarPlant(db.Model):
     grid_substation = db.Column(db.String(100), nullable=False)
     connected_feeder = db.Column(db.String(100), nullable=False)
 
-# Routes (your existing route code here)
-
+# Routes
 @app.route('/')
 def index():
     plants = SolarPlant.query.all()
@@ -55,10 +54,10 @@ def add_plant():
     return render_template('add_plant.html')
 
 # Database creation
-@app.before_first_request
 def create_tables():
-    db.create_all()
+    with app.app_context():
+        db.create_all()
 
 if __name__ == '__main__':
+    create_tables()
     app.run(debug=True)
-    
