@@ -8,17 +8,12 @@ app = Flask(__name__)
 
 # Configuration
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your_fallback_secret_key_here')
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['GOOGLE_MAPS_API_KEY'] = os.environ.get('GOOGLE_MAPS_API_KEY', 'your_fallback_api_key_here')
-
-
-
 database_url = os.environ.get('DATABASE_URL')
 if database_url and database_url.startswith("postgres://"):
     database_url = database_url.replace("postgres://", "postgresql://", 1)
-
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url or 'sqlite:///solar_plants.db'
-
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['GOOGLE_MAPS_API_KEY'] = os.environ.get('GOOGLE_MAPS_API_KEY', 'your_fallback_api_key_here')
 
 db = SQLAlchemy(app)
 
@@ -38,7 +33,6 @@ class SubstationForecast(db.Model):
     timestamp = db.Column(db.DateTime, nullable=False)
     generation_forecast = db.Column(db.Float)
     load_forecast = db.Column(db.Float)
-
     substation = db.relationship('GridSubstation', backref=db.backref('forecasts', lazy=True))
 
 class SolarPlant(db.Model):
@@ -60,6 +54,7 @@ def index():
     plants = SolarPlant.query.order_by(SolarPlant.id.desc()).limit(10).all()
     return render_template('index.html', plants=plants)
 
+# CRUD for Solar Plants
 @app.route('/plants')
 def list_plants():
     plants = SolarPlant.query.all()
@@ -115,6 +110,53 @@ def delete_plant(id):
     flash('Solar plant deleted successfully!', 'success')
     return redirect(url_for('list_plants'))
 
+# CRUD for Grid Substations
+@app.route('/substations')
+def list_substations():
+    substations = GridSubstation.query.all()
+    return render_template('list_substations.html', substations=substations)
+
+@app.route('/substation/add', methods=['GET', 'POST'])
+def add_substation():
+    if request.method == 'POST':
+        new_substation = GridSubstation(
+            name=request.form['name'],
+            code=request.form['code'],
+            latitude=float(request.form['latitude']),
+            longitude=float(request.form['longitude']),
+            current_load=float(request.form['current_load'])
+        )
+        db.session.add(new_substation)
+        db.session.commit()
+        flash('New grid substation added successfully!', 'success')
+        return redirect(url_for('list_substations'))
+    return render_template('add_substation.html')
+
+@app.route('/substation/edit/<int:id>', methods=['GET', 'POST'])
+def edit_substation(id):
+    substation = GridSubstation.query.get_or_404(id)
+    if request.method == 'POST':
+        substation.name = request.form['name']
+        substation.code = request.form['code']
+        substation.latitude = float(request.form['latitude'])
+        substation.longitude = float(request.form['longitude'])
+        substation.current_load = float(request.form['current_load'])
+        db.session.commit()
+        flash('Grid substation updated successfully!', 'success')
+        return redirect(url_for('list_substations'))
+    return render_template('edit_substation.html', substation=substation)
+
+@app.route('/substation/delete/<int:id>', methods=['POST'])
+def delete_substation(id):
+    substation = GridSubstation.query.get_or_404(id)
+    if SolarPlant.query.filter_by(grid_substation_id=id).first():
+        flash('Cannot delete substation. It has associated solar plants.', 'error')
+    else:
+        db.session.delete(substation)
+        db.session.commit()
+        flash('Grid substation deleted successfully!', 'success')
+    return redirect(url_for('list_substations'))
+
 @app.route('/map')
 def map_view():
     plants = SolarPlant.query.all()
@@ -156,36 +198,6 @@ def map_view():
     return render_template('map.html', 
                            plants_json=json.dumps(plants_data),
                            substations_json=json.dumps(substations_data))
-
-@app.route('/manage_substations')
-def manage_substations():
-    substations = GridSubstation.query.all()
-    return render_template('manage_substations.html', substations=substations)
-
-@app.route('/add_substation', methods=['POST'])
-def add_substation():
-    name = request.form['name']
-    code = request.form['code']
-    latitude = float(request.form['latitude'])
-    longitude = float(request.form['longitude'])
-    current_load = float(request.form['current_load'])
-
-    new_substation = GridSubstation(name=name, code=code, latitude=latitude, longitude=longitude, current_load=current_load)
-    db.session.add(new_substation)
-    db.session.commit()
-    flash(f"Substation '{name}' added successfully.", 'success')
-    return redirect(url_for('manage_substations'))
-
-@app.route('/remove_substation/<int:id>', methods=['POST'])
-def remove_substation(id):
-    substation = GridSubstation.query.get_or_404(id)
-    if SolarPlant.query.filter_by(grid_substation_id=id).first():
-        flash(f"Cannot remove substation '{substation.name}' as it is in use.", 'error')
-    else:
-        db.session.delete(substation)
-        db.session.commit()
-        flash(f"Substation '{substation.name}' removed successfully.", 'success')
-    return redirect(url_for('manage_substations'))
 
 # Database creation
 def create_tables():
