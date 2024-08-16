@@ -7,9 +7,9 @@ def create_sample_data():
     with app.app_context():
         # First, let's create some sample substations if they don't exist
         substations = [
-            {"name": "North City Substation", "code": "NCS001", "latitude": 34.0522, "longitude": -118.2437, "current_load": 150.5},
-            {"name": "East Valley Substation", "code": "EVS002", "latitude": 34.1478, "longitude": -118.1445, "current_load": 120.3},
-            {"name": "South Bay Substation", "code": "SBS003", "latitude": 33.8822, "longitude": -118.4089, "current_load": 180.7}
+            {"name": "Kesbewa", "code": "KESBE_CO", "latitude": 6.795783, "longitude": 79.962302, "current_load": 10.2},
+            {"name": "Sri Jayawardanapura", "code": "SJAPU_CO", "latitude": 6.890911, "longitude":79.924413, "current_load": 30},
+            {"name": "Trincomalee", "code": "TRNCO_AN", "latitude": 8.591325, "longitude": 81.217654, "current_load": 15}
         ]
 
         for sub_data in substations:
