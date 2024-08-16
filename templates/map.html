@@ -7,8 +7,51 @@
         var plants = JSON.parse(plantsJson.replace(/&quot;/g, '"'));
 
         function initMap() {
-            // ... (rest of the initMap function remains the same)
+            var map = new google.maps.Map(document.getElementById('map'), {
+                zoom: 6,
+                center: {lat: 0, lng: 0}
+            });
+
+            var bounds = new google.maps.LatLngBounds();
+            var infowindow = new google.maps.InfoWindow();
+
+            plants.forEach(function(plant) {
+                var marker = new google.maps.Marker({
+                    position: {lat: plant.latitude, lng: plant.longitude},
+                    map: map,
+                    title: plant.name
+                });
+
+                bounds.extend(marker.getPosition());
+
+                google.maps.event.addListener(marker, 'click', function() {
+                    var content = '<div>' +
+                        '<h3>' + plant.name + '</h3>' +
+                        '<p>Size: ' + plant.size + ' KW</p>' +
+                        '<p>Angle: ' + plant.angle + '°</p>' +
+                        '<p>Max Power: ' + plant.max_power + ' KW</p>' +
+                        '<p>Owner: ' + plant.owner_name + '</p>' +
+                        '<p>Substation: ' + plant.grid_substation + '</p>' +
+                        '<p>Feeder: ' + plant.connected_feeder + '</p>' +
+                        '</div>';
+                    infowindow.setContent(content);
+                    infowindow.open(map, marker);
+                });
+            });
+
+            if (plants.length > 0) {
+                map.fitBounds(bounds);
+            }
         }
+
+
+
+
+
+
+
+
+
     </script>
     <script async defer
         src="https://maps.googleapis.com/maps/api/js?key={{ config['GOOGLE_MAPS_API_KEY'] }}&callback=initMap">
