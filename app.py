@@ -1,6 +1,7 @@
 import os
 from flask import Flask, render_template, request, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
+from flask import flash
 
 app = Flask(__name__)
 
@@ -31,6 +32,47 @@ class SolarPlant(db.Model):
     grid_substation_id = db.Column(db.Integer, db.ForeignKey('grid_sub_list.id'), nullable=False)
     grid_substation = db.relationship('GridSubList', backref=db.backref('solar_plants', lazy=True))
     connected_feeder = db.Column(db.String(100), nullable=False)
+
+
+
+
+@app.route('/manage_substations')
+def manage_substations():
+    substations = GridSubList.query.all()
+    return render_template('manage_substations.html', substations=substations)
+
+@app.route('/add_substation', methods=['POST'])
+def add_substation():
+    name = request.form['name']
+    existing = GridSubList.query.filter_by(name=name).first()
+    if existing:
+        flash(f"Substation '{name}' already exists.", 'error')
+    else:
+        new_substation = GridSubList(name=name)
+        db.session.add(new_substation)
+        db.session.commit()
+        flash(f"Substation '{name}' added successfully.", 'success')
+    return redirect(url_for('manage_substations'))
+
+@app.route('/remove_substation/<int:id>', methods=['POST'])
+def remove_substation(id):
+    substation = GridSubList.query.get_or_404(id)
+    if SolarPlant.query.filter_by(grid_substation_id=id).first():
+        flash(f"Cannot remove substation '{substation.name}' as it is in use.", 'error')
+    else:
+        db.session.delete(substation)
+        db.session.commit()
+        flash(f"Substation '{substation.name}' removed successfully.", 'success')
+    return redirect(url_for('manage_substations'))
+
+
+
+
+
+
+
+
+
 
 @app.route('/')
 def index():
