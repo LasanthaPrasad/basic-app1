@@ -7,9 +7,12 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
+            line-height: 1.6;
+            margin: 0;
             padding: 20px;
+        }
+        h1, h2 {
+            color: #333;
         }
         .flash {
             padding: 10px;
@@ -77,30 +80,3 @@
 
     <h2>Existing Substations</h2>
     <table>
-        <tr>
-            <th>ID</th>
-            <th>Name</th>
-            <th>Code</th>
-            <th>Location</th>
-            <th>Current Load (MW)</th>
-            <th>Action</th>
-        </tr>
-        {% for substation in substations %}
-        <tr>
-            <td>{{ substation.id }}</td>
-            <td>{{ substation.name }}</td>
-            <td>{{ substation.code }}</td>
-            <td>{{ substation.latitude }}, {{ substation.longitude }}</td>
-            <td>{{ substation.current_load }}</td>
-            <td>
-                <form action="{{ url_for('remove_substation', id=substation.id) }}" method="post" onsubmit="return confirm('Are you sure you want to remove this substation?');">
-                    <button type="submit">Remove</button>
-                </form>
-            </td>
-        </tr>
-        {% endfor %}
-    </table>
-
-    <a href="{{ url_for('index') }}">Back to Solar Plants</a>
-</body>
-</html>
