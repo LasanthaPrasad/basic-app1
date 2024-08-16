@@ -129,6 +129,7 @@ def manage_substations():
     substations = GridSubstation.query.all()
     return render_template('manage_substations.html', substations=substations)
 
+
 @app.route('/add_substation', methods=['POST'])
 def add_substation():
     name = request.form['name']
@@ -142,6 +143,8 @@ def add_substation():
     db.session.commit()
     flash(f"Substation '{name}' added successfully.", 'success')
     return redirect(url_for('manage_substations'))
+
+
 
 @app.route('/remove_substation/<int:id>', methods=['POST'])
 def remove_substation(id):
