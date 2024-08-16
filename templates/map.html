@@ -1,0 +1,17 @@
+<body>
+    <h1>Solar Plants Map</h1>
+    <div id="map"></div>
+
+    <script>
+        var plantsJson = '{{ plants_json|safe }}';
+        var plants = JSON.parse(plantsJson.replace(/&quot;/g, '"'));
+
+        function initMap() {
+            // ... (rest of the initMap function remains the same)
+        }
+    </script>
+    <script async defer
+        src="https://maps.googleapis.com/maps/api/js?key={{ config['GOOGLE_MAPS_API_KEY'] }}&callback=initMap">
+    </script>
+    <a href="{{ url_for('index') }}">Back to Solar Plants List</a>
+</body>

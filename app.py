@@ -5,6 +5,10 @@ from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 
 
+import json
+from flask import render_template
+from markupsafe import Markup
+
 
 app = Flask(__name__)
 
@@ -20,6 +24,8 @@ if database_url and database_url.startswith("postgres://"):
 
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url or 'sqlite:///solar_plants.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['GOOGLE_MAPS_API_KEY'] = os.environ.get('GOOGLE_MAPS_API_KEY', 'your_fallback_api_key_here')
+
 
 db = SQLAlchemy(app)
 
@@ -40,6 +46,30 @@ class SolarPlant(db.Model):
     grid_substation_id = db.Column(db.Integer, db.ForeignKey('grid_sub_list.id'), nullable=False)
     grid_substation = db.relationship('GridSubList', backref=db.backref('solar_plants', lazy=True))
     connected_feeder = db.Column(db.String(100), nullable=False)
+
+
+
+
+
+@app.route('/map')
+def map_view():
+    plants = SolarPlant.query.all()
+    plants_data = [{
+        'id': plant.id,
+        'name': plant.name,
+        'latitude': plant.latitude,
+        'longitude': plant.longitude,
+        'size': plant.size,
+        'angle': plant.angle,
+        'max_power': plant.max_power,
+        'owner_name': plant.owner_name,
+        'grid_substation': plant.grid_substation.name if plant.grid_substation else '',
+        'connected_feeder': plant.connected_feeder
+    } for plant in plants]
+    
+    plants_json = json.dumps(plants_data)
+    return render_template('map.html', plants_json=Markup(plants_json))
+
 
 
 
