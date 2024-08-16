@@ -1,23 +1,15 @@
-import os
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timedelta
 import json
+import os
 
 app = Flask(__name__)
 
-# Set a secret key for the application
-app.secret_key = os.environ.get('SECRET_KEY') or 'your_fallback_secret_key_here'
-
-# Database configuration
-database_url = os.environ.get('DATABASE_URL')
-if database_url and database_url.startswith("postgres://"):
-    database_url = database_url.replace("postgres://", "postgresql://", 1)
-
-app.config['SQLALCHEMY_DATABASE_URI'] = database_url or 'sqlite:///solar_plants.db'
+# Configuration
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your_fallback_secret_key_here')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///solar_plants.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-# Google Maps API key
 app.config['GOOGLE_MAPS_API_KEY'] = os.environ.get('GOOGLE_MAPS_API_KEY', 'your_fallback_api_key_here')
 
 db = SQLAlchemy(app)
@@ -54,13 +46,11 @@ class SolarPlant(db.Model):
     grid_substation_id = db.Column(db.Integer, db.ForeignKey('grid_substation.id'), nullable=False)
     connected_feeder = db.Column(db.String(100), nullable=False)
 
-
+# Routes
 @app.route('/')
 def index():
-    plants = SolarPlant.query.order_by(SolarPlant.id.desc()).limit(10).all()  # Show 10 most recent plants
+    plants = SolarPlant.query.order_by(SolarPlant.id.desc()).limit(10).all()
     return render_template('index.html', plants=plants)
-
-
 
 @app.route('/plants')
 def list_plants():
@@ -117,17 +107,6 @@ def delete_plant(id):
     flash('Solar plant deleted successfully!', 'success')
     return redirect(url_for('list_plants'))
 
-
-
-
-
-
-
-
-
-
-
-
 @app.route('/map')
 def map_view():
     plants = SolarPlant.query.all()
@@ -175,7 +154,6 @@ def manage_substations():
     substations = GridSubstation.query.all()
     return render_template('manage_substations.html', substations=substations)
 
-
 @app.route('/add_substation', methods=['POST'])
 def add_substation():
     name = request.form['name']
@@ -189,8 +167,6 @@ def add_substation():
     db.session.commit()
     flash(f"Substation '{name}' added successfully.", 'success')
     return redirect(url_for('manage_substations'))
-
-
 
 @app.route('/remove_substation/<int:id>', methods=['POST'])
 def remove_substation(id):
