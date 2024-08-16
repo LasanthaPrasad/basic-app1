@@ -1,9 +1,17 @@
+
+
 import os
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
-from flask import flash
+
+
 
 app = Flask(__name__)
+
+# Set a secret key for the application
+app.secret_key = os.environ.get('SECRET_KEY') or '1337454554'
+
+
 
 # Database configuration
 database_url = os.environ.get('DATABASE_URL')
