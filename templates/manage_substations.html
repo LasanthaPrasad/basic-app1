@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Grid Substations</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .flash {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .flash.error {
+            background-color: #ffcccc;
+            border: 1px solid #ff0000;
+        }
+        .flash.success {
+            background-color: #ccffcc;
+            border: 1px solid #00ff00;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        form {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Manage Grid Substations</h1>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="flash {{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <h2>Add New Substation</h2>
+    <form action="{{ url_for('add_substation') }}" method="post">
+        <label for="name">Substation Name:</label>
+        <input type="text" id="name" name="name" required>
+        <button type="submit">Add Substation</button>
+    </form>
+
+    <h2>Existing Substations</h2>
+    <table>
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Action</th>
+        </tr>
+        {% for substation in substations %}
+        <tr>
+            <td>{{ substation.id }}</td>
+            <td>{{ substation.name }}</td>
+            <td>
+                <form action="{{ url_for('remove_substation', id=substation.id) }}" method="post" onsubmit="return confirm('Are you sure you want to remove this substation?');">
+                    <button type="submit">Remove</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <a href="{{ url_for('index') }}">Back to Solar Plants</a>
+</body>
+</html>
