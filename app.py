@@ -1,23 +1,13 @@
-
-
 import os
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
-
-
+from datetime import datetime, timedelta
 import json
-from flask import render_template
-from markupsafe import Markup
-from datetime import datetime
-from sqlalchemy import func
-
 
 app = Flask(__name__)
 
 # Set a secret key for the application
-app.secret_key = os.environ.get('SECRET_KEY') or '1337454554'
-
-
+app.secret_key = os.environ.get('SECRET_KEY') or 'your_fallback_secret_key_here'
 
 # Database configuration
 database_url = os.environ.get('DATABASE_URL')
@@ -26,12 +16,13 @@ if database_url and database_url.startswith("postgres://"):
 
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url or 'sqlite:///solar_plants.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['GOOGLE_MAPS_API_KEY'] = os.environ.get('GOOGLE_MAPS_API_KEY', 'your_fallback_api_key_here')
 
+# Google Maps API key
+app.config['GOOGLE_MAPS_API_KEY'] = os.environ.get('GOOGLE_MAPS_API_KEY', 'your_fallback_api_key_here')
 
 db = SQLAlchemy(app)
 
-
+# Models
 class GridSubstation(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
@@ -50,13 +41,6 @@ class SubstationForecast(db.Model):
 
     substation = db.relationship('GridSubstation', backref=db.backref('forecasts', lazy=True))
 
-
-
-
-class GridSubList(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False, unique=True)
-
 class SolarPlant(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
@@ -67,12 +51,36 @@ class SolarPlant(db.Model):
     max_power = db.Column(db.Float, nullable=False)
     owner_name = db.Column(db.String(100), nullable=False)
     owner_account = db.Column(db.String(50), nullable=False)
-    grid_substation_id = db.Column(db.Integer, db.ForeignKey('grid_sub_list.id'), nullable=False)
-    grid_substation = db.relationship('GridSubList', backref=db.backref('solar_plants', lazy=True))
-    connected_feeder = db.Column(db.String(100), nullable=False)
     grid_substation_id = db.Column(db.Integer, db.ForeignKey('grid_substation.id'), nullable=False)
+    connected_feeder = db.Column(db.String(100), nullable=False)
 
+# Routes
+@app.route('/')
+def index():
+    plants = SolarPlant.query.all()
+    return render_template('index.html', plants=plants)
 
+@app.route('/add', methods=['GET', 'POST'])
+def add_plant():
+    if request.method == 'POST':
+        new_plant = SolarPlant(
+            name=request.form['name'],
+            size=float(request.form['size']),
+            latitude=float(request.form['latitude']),
+            longitude=float(request.form['longitude']),
+            angle=float(request.form['angle']),
+            max_power=float(request.form['max_power']),
+            owner_name=request.form['owner_name'],
+            owner_account=request.form['owner_account'],
+            grid_substation_id=int(request.form['grid_substation']),
+            connected_feeder=request.form['connected_feeder']
+        )
+        db.session.add(new_plant)
+        db.session.commit()
+        flash('New solar plant added successfully!', 'success')
+        return redirect(url_for('index'))
+    substations = GridSubstation.query.all()
+    return render_template('add_plant.html', substations=substations)
 
 @app.route('/map')
 def map_view():
@@ -116,34 +124,28 @@ def map_view():
                            plants_json=json.dumps(plants_data),
                            substations_json=json.dumps(substations_data))
 
-
-
-
-
-
-
-
 @app.route('/manage_substations')
 def manage_substations():
-    substations = GridSubList.query.all()
+    substations = GridSubstation.query.all()
     return render_template('manage_substations.html', substations=substations)
 
 @app.route('/add_substation', methods=['POST'])
 def add_substation():
     name = request.form['name']
-    existing = GridSubList.query.filter_by(name=name).first()
-    if existing:
-        flash(f"Substation '{name}' already exists.", 'error')
-    else:
-        new_substation = GridSubList(name=name)
-        db.session.add(new_substation)
-        db.session.commit()
-        flash(f"Substation '{name}' added successfully.", 'success')
+    code = request.form['code']
+    latitude = float(request.form['latitude'])
+    longitude = float(request.form['longitude'])
+    current_load = float(request.form['current_load'])
+
+    new_substation = GridSubstation(name=name, code=code, latitude=latitude, longitude=longitude, current_load=current_load)
+    db.session.add(new_substation)
+    db.session.commit()
+    flash(f"Substation '{name}' added successfully.", 'success')
     return redirect(url_for('manage_substations'))
 
 @app.route('/remove_substation/<int:id>', methods=['POST'])
 def remove_substation(id):
-    substation = GridSubList.query.get_or_404(id)
+    substation = GridSubstation.query.get_or_404(id)
     if SolarPlant.query.filter_by(grid_substation_id=id).first():
         flash(f"Cannot remove substation '{substation.name}' as it is in use.", 'error')
     else:
@@ -152,52 +154,10 @@ def remove_substation(id):
         flash(f"Substation '{substation.name}' removed successfully.", 'success')
     return redirect(url_for('manage_substations'))
 
-
-
-
-
-
-
-
-
-
-@app.route('/')
-def index():
-    plants = SolarPlant.query.all()
-    return render_template('index.html', plants=plants)
-
-@app.route('/add', methods=['GET', 'POST'])
-def add_plant():
-    substations = GridSubList.query.all()
-    if request.method == 'POST':
-        substation = GridSubList.query.get(request.form['grid_substation'])
-        new_plant = SolarPlant(
-            name=request.form['name'],
-            size=float(request.form['size']),
-            latitude=float(request.form['latitude']),
-            longitude=float(request.form['longitude']),
-            angle=float(request.form['angle']),
-            max_power=float(request.form['max_power']),
-            owner_name=request.form['owner_name'],
-            owner_account=request.form['owner_account'],
-            grid_substation=substation,
-            connected_feeder=request.form['connected_feeder']
-        )
-        db.session.add(new_plant)
-        db.session.commit()
-        return redirect(url_for('index'))
-    return render_template('add_plant.html', substations=substations)
-
+# Database creation
 def create_tables():
     with app.app_context():
         db.create_all()
-        
-        # Add some example substations if the table is empty
-        if not GridSubList.query.first():
-            substations = ['Substation Aq', 'Substation qB', 'Substation ewC']
-            for sub in substations:
-                db.session.add(GridSubList(name=sub))
-            db.session.commit()
 
 if __name__ == '__main__':
     create_tables()
