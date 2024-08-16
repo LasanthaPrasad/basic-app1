@@ -3,54 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Solar Plants Map</title>
+    <title>Solar Plants and Grid Substations Map</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-        }
-        h1 {
-            color: #333;
-        }
-        #map {
-            height: 600px;
+        /* ... (keep existing styles) ... */
+        .chart-container {
+            height: 300px;
             width: 100%;
-            margin-bottom: 20px;
-        }
-        .controls {
-            margin-bottom: 20px;
-        }
-        a {
-            display: inline-block;
-            margin-top: 10px;
-            padding: 10px 15px;
-            background-color: #4CAF50;
-            color: white;
-            text-decoration: none;
-            border-radius: 4px;
-        }
-        a:hover {
-            background-color: #45a049;
+            margin-top: 20px;
         }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <h1>Solar Plants Map</h1>
+    <h1>Solar Plants and Grid Substations Map</h1>
     <div class="controls">
-        <label for="filter">Filter by Substation: </label>
+        <label for="filter">Filter: </label>
         <select id="filter">
-            <option value="">All Substations</option>
+            <option value="all">All</option>
+            <option value="plants">Solar Plants</option>
+            <option value="substations">Grid Substations</option>
         </select>
     </div>
     <div id="map"></div>
+    <div id="chart-container" class="chart-container" style="display: none;">
+        <canvas id="forecast-chart"></canvas>
+    </div>
     <a href="{{ url_for('index') }}">Back to Solar Plants List</a>
 
     <script>
         var plantsJson = '{{ plants_json|safe }}';
+        var substationsJson = '{{ substations_json|safe }}';
         var plants = JSON.parse(plantsJson.replace(/&quot;/g, '"'));
-        var markers = [];
+        var substations = JSON.parse(substationsJson.replace(/&quot;/g, '"'));
+        var plantMarkers = [];
+        var substationMarkers = [];
         var map;
+        var infowindow;
 
         function initMap() {
             map = new google.maps.Map(document.getElementById('map'), {
@@ -58,17 +46,19 @@
                 center: {lat: 0, lng: 0}
             });
 
+            infowindow = new google.maps.InfoWindow();
+
             var bounds = new google.maps.LatLngBounds();
-            var infowindow = new google.maps.InfoWindow();
 
             plants.forEach(function(plant) {
                 var marker = new google.maps.Marker({
                     position: {lat: plant.latitude, lng: plant.longitude},
                     map: map,
-                    title: plant.name
+                    title: plant.name,
+                    icon: 'http://maps.google.com/mapfiles/ms/icons/green-dot.png'
                 });
 
-                markers.push(marker);
+                plantMarkers.push(marker);
                 bounds.extend(marker.getPosition());
 
                 google.maps.event.addListener(marker, 'click', function() {
@@ -86,33 +76,88 @@
                 });
             });
 
-            if (plants.length > 0) {
+            substations.forEach(function(substation) {
+                var marker = new google.maps.Marker({
+                    position: {lat: substation.latitude, lng: substation.longitude},
+                    map: map,
+                    title: substation.name,
+                    icon: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png'
+                });
+
+                substationMarkers.push(marker);
+                bounds.extend(marker.getPosition());
+
+                google.maps.event.addListener(marker, 'click', function() {
+                    var content = '<div>' +
+                        '<h3>' + substation.name + '</h3>' +
+                        '<p>Code: ' + substation.code + '</p>' +
+                        '<p>Current Load: ' + substation.current_load + ' MW</p>' +
+                        '<button onclick="showForecast(' + substation.id + ')">Show Forecast</button>' +
+                        '</div>';
+                    infowindow.setContent(content);
+                    infowindow.open(map, marker);
+                });
+            });
+
+            if (plants.length > 0 || substations.length > 0) {
                 map.fitBounds(bounds);
             }
 
-            populateFilterOptions();
-        }
-
-        function populateFilterOptions() {
-            var filterSelect = document.getElementById('filter');
-            var substations = new Set(plants.map(plant => plant.grid_substation));
-            substations.forEach(function(substation) {
-                var option = document.createElement('option');
-                option.value = substation;
-                option.textContent = substation;
-                filterSelect.appendChild(option);
-            });
-
-            filterSelect.addEventListener('change', filterMarkers);
+            document.getElementById('filter').addEventListener('change', filterMarkers);
         }
 
         function filterMarkers() {
-            var selectedSubstation = document.getElementById('filter').value;
-            markers.forEach(function(marker, i) {
-                if (selectedSubstation === "" || plants[i].grid_substation === selectedSubstation) {
-                    marker.setVisible(true);
-                } else {
-                    marker.setVisible(false);
+            var selectedFilter = document.getElementById('filter').value;
+            plantMarkers.forEach(function(marker) {
+                marker.setVisible(selectedFilter === 'all' || selectedFilter === 'plants');
+            });
+            substationMarkers.forEach(function(marker) {
+                marker.setVisible(selectedFilter === 'all' || selectedFilter === 'substations');
+            });
+        }
+
+        function showForecast(substationId) {
+            var substation = substations.find(s => s.id === substationId);
+            if (!substation) return;
+
+            var chartContainer = document.getElementById('chart-container');
+            chartContainer.style.display = 'block';
+
+            var ctx = document.getElementById('forecast-chart').getContext('2d');
+            var chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: substation.forecasts.map(f => new Date(f.timestamp).toLocaleString()),
+                    datasets: [{
+                        label: 'Generation Forecast (MW)',
+                        data: substation.forecasts.map(f => f.generation_forecast),
+                        borderColor: 'rgb(75, 192, 192)',
+                        tension: 0.1
+                    }, {
+                        label: 'Load Forecast (MW)',
+                        data: substation.forecasts.map(f => f.load_forecast),
+                        borderColor: 'rgb(255, 99, 132)',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'Time'
+                            }
+                        },
+                        y: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'MW'
+                            }
+                        }
+                    }
                 }
             });
         }
