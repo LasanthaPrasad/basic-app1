@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solar Plants</title>
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <h1>Solar Plants</h1>
+    <a href="{{ url_for('add_plant') }}">Add New Plant</a>
+    <table>
+        <tr>
+            <th>Name</th>
+            <th>Size (KW)</th>
+            <th>Location</th>
+            <th>Angle</th>
+            <th>Max Power</th>
+            <th>Owner</th>
+            <th>Account</th>
+            <th>Substation</th>
+            <th>Feeder</th>
+        </tr>
+        {% for plant in plants %}
+        <tr>
+            <td>{{ plant.name }}</td>
+            <td>{{ plant.size }}</td>
+            <td>{{ plant.latitude }}, {{ plant.longitude }}</td>
+            <td>{{ plant.angle }}</td>
+            <td>{{ plant.max_power }}</td>
+            <td>{{ plant.owner_name }}</td>
+            <td>{{ plant.owner_account }}</td>
+            <td>{{ plant.grid_substation }}</td>
+            <td>{{ plant.connected_feeder }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>
