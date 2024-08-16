@@ -54,13 +54,11 @@ class SolarPlant(db.Model):
     grid_substation_id = db.Column(db.Integer, db.ForeignKey('grid_substation.id'), nullable=False)
     connected_feeder = db.Column(db.String(100), nullable=False)
 
-# Routes
+
 @app.route('/')
 def index():
-    plants = SolarPlant.query.all()
+    plants = SolarPlant.query.order_by(SolarPlant.id.desc()).limit(10).all()  # Show 10 most recent plants
     return render_template('index.html', plants=plants)
-
-
 
 
 
