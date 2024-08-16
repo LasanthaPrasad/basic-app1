@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Grid Substation</title>
+</head>
+<body>
+    <h1>Edit Grid Substation</h1>
+    <form method="POST">
+        <label for="name">Substation Name:</label>
+        <input type="text" id="name" name="name" value="{{ substation.name }}" required><br>
+
+        <label for="code">Substation Code:</label>
+        <input type="text" id="code" name="code" value="{{ substation.code }}" required><br>
+
+        <label for="latitude">Latitude:</label>
+        <input type="number" id="latitude" name="latitude" value="{{ substation.latitude }}" step="any" required><br>
+
+        <label for="longitude">Longitude:</label>
+        <input type="number" id="longitude" name="longitude" value="{{ substation.longitude }}" step="any" required><br>
+
+        <label for="current_load">Current Load (MW):</label>
+        <input type="number" id="current_load" name="current_load" value="{{ substation.current_load }}" step="0.01" required><br>
+
+        <input type="submit" value="Update Substation">
+    </form>
+    <a href="{{ url_for('list_substations') }}">Back to Substation List</a>
+</body>
+</html>

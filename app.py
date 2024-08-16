@@ -111,10 +111,12 @@ def delete_plant(id):
     return redirect(url_for('list_plants'))
 
 # CRUD for Grid Substations
+
 @app.route('/substations')
 def list_substations():
     substations = GridSubstation.query.all()
     return render_template('list_substations.html', substations=substations)
+
 
 @app.route('/substation/add', methods=['GET', 'POST'])
 def add_substation():
