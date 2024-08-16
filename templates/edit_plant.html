@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Solar Plant</title>
+</head>
+<body>
+    <h1>Edit Solar Plant</h1>
+    <form method="POST">
+        <label for="name">Plant Name:</label>
+        <input type="text" id="name" name="name" value="{{ plant.name }}" required><br>
+
+        <label for="size">Size (KW):</label>
+        <input type="number" id="size" name="size" value="{{ plant.size }}" step="0.01" required><br>
+
+        <label for="latitude">Latitude:</label>
+        <input type="number" id="latitude" name="latitude" value="{{ plant.latitude }}" step="any" required><br>
+
+        <label for="longitude">Longitude:</label>
+        <input type="number" id="longitude" name="longitude" value="{{ plant.longitude }}" step="any" required><br>
+
+        <label for="angle">Angle:</label>
+        <input type="number" id="angle" name="angle" value="{{ plant.angle }}" step="0.1" required><br>
+
+        <label for="max_power">Max Power (KW):</label>
+        <input type="number" id="max_power" name="max_power" value="{{ plant.max_power }}" step="0.01" required><br>
+
+        <label for="owner_name">Owner Name:</label>
+        <input type="text" id="owner_name" name="owner_name" value="{{ plant.owner_name }}" required><br>
+
+        <label for="owner_account">Owner Account:</label>
+        <input type="text" id="owner_account" name="owner_account" value="{{ plant.owner_account }}" required><br>
+
+        <label for="grid_substation">Grid Substation:</label>
+        <select id="grid_substation" name="grid_substation" required>
+            {% for substation in substations %}
+            <option value="{{ substation.id }}" {% if substation.id == plant.grid_substation_id %}selected{% endif %}>
+                {{ substation.name }}
+            </option>
+            {% endfor %}
+        </select><br>
+
+        <label for="connected_feeder">Connected Feeder:</label>
+        <input type="text" id="connected_feeder" name="connected_feeder" value="{{ plant.connected_feeder }}" required><br>
+
+        <input type="submit" value="Update Plant">
+    </form>
+    <a href="{{ url_for('list_plants') }}">Back to Plant List</a>
+</body>
+</html>

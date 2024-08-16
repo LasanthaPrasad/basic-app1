@@ -60,6 +60,75 @@ def index():
     plants = SolarPlant.query.all()
     return render_template('index.html', plants=plants)
 
+
+
+
+
+@app.route('/plants')
+def list_plants():
+    plants = SolarPlant.query.all()
+    return render_template('list_plants.html', plants=plants)
+
+@app.route('/plant/add', methods=['GET', 'POST'])
+def add_plant():
+    if request.method == 'POST':
+        new_plant = SolarPlant(
+            name=request.form['name'],
+            size=float(request.form['size']),
+            latitude=float(request.form['latitude']),
+            longitude=float(request.form['longitude']),
+            angle=float(request.form['angle']),
+            max_power=float(request.form['max_power']),
+            owner_name=request.form['owner_name'],
+            owner_account=request.form['owner_account'],
+            grid_substation_id=int(request.form['grid_substation']),
+            connected_feeder=request.form['connected_feeder']
+        )
+        db.session.add(new_plant)
+        db.session.commit()
+        flash('New solar plant added successfully!', 'success')
+        return redirect(url_for('list_plants'))
+    substations = GridSubstation.query.all()
+    return render_template('add_plant.html', substations=substations)
+
+@app.route('/plant/edit/<int:id>', methods=['GET', 'POST'])
+def edit_plant(id):
+    plant = SolarPlant.query.get_or_404(id)
+    if request.method == 'POST':
+        plant.name = request.form['name']
+        plant.size = float(request.form['size'])
+        plant.latitude = float(request.form['latitude'])
+        plant.longitude = float(request.form['longitude'])
+        plant.angle = float(request.form['angle'])
+        plant.max_power = float(request.form['max_power'])
+        plant.owner_name = request.form['owner_name']
+        plant.owner_account = request.form['owner_account']
+        plant.grid_substation_id = int(request.form['grid_substation'])
+        plant.connected_feeder = request.form['connected_feeder']
+        db.session.commit()
+        flash('Solar plant updated successfully!', 'success')
+        return redirect(url_for('list_plants'))
+    substations = GridSubstation.query.all()
+    return render_template('edit_plant.html', plant=plant, substations=substations)
+
+@app.route('/plant/delete/<int:id>', methods=['POST'])
+def delete_plant(id):
+    plant = SolarPlant.query.get_or_404(id)
+    db.session.delete(plant)
+    db.session.commit()
+    flash('Solar plant deleted successfully!', 'success')
+    return redirect(url_for('list_plants'))
+
+
+
+
+
+
+
+
+
+
+
 @app.route('/add', methods=['GET', 'POST'])
 def add_plant():
     if request.method == 'POST':
