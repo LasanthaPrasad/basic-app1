@@ -3,12 +3,18 @@ from datetime import datetime, timedelta
 import random
 import math
 
+def reset_database():
+    with app.app_context():
+        # Drop all tables
+        db.drop_all()
+        
+        # Create all tables
+        db.create_all()
+        
+        print("Database reset complete. All tables dropped and recreated.")
+
 def create_sample_data():
     with app.app_context():
-        # Clear existing data
-        db.drop_all()
-        db.create_all()
-
         # Create sample grid substations
         substations = [
             {"name": "North City Substation", "code": "NCS001", "latitude": 34.0522, "longitude": -118.2437, "current_load": 150.5},
@@ -21,6 +27,7 @@ def create_sample_data():
             db.session.add(substation)
         
         db.session.commit()
+        print("Sample substations created.")
 
         # Create sample solar plants
         plants = [
@@ -34,6 +41,7 @@ def create_sample_data():
             db.session.add(plant)
         
         db.session.commit()
+        print("Sample solar plants created.")
 
         # Create sample forecast data
         start_time = datetime.now().replace(minute=0, second=0, microsecond=0)
@@ -63,7 +71,9 @@ def create_sample_data():
                 current_time += timedelta(minutes=15)
 
         db.session.commit()
-        print("Sample data created successfully!")
+        print("Sample forecast data created.")
 
 if __name__ == "__main__":
+    reset_database()
     create_sample_data()
+    print("Database initialization complete. Sample data has been added.")
