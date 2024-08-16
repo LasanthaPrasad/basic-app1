@@ -3,7 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
 #app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://localhost/solar_plants'  # Change this for Heroku
-app.config['SQLALCHEMY_DATABASE_URI'] ='postgresql://u6vursk1m6enlu:p375f4bba0d873a9a2c55607f3f38890300cbe538fac836de988e4de432d4e375@c1i13pt05ja4ag.cluster-czrs8kj4isg7.us-east-1.rds.amazonaws.com:5432/de71fjudo078hq/solar_plants'
+app.config['SQLALCHEMY_DATABASE_URI'] ='postgresql://u6vursk1m6enlu:p375f4bba0d873a9a2c55607f3f38890300cbe538fac836de988e4de432d4e375@c1i13pt05ja4ag.cluster-czrs8kj4isg7.us-east-1.rds.amazonaws.com:5432/de71fjudo078hq'
 
 
 
