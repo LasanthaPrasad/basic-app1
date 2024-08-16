@@ -20,7 +20,13 @@
     </style>
 </head>
 <body>
+
+
+
     <h1>Solar Plants</h1>
+    <!-- Add this link somewhere in your index.html, perhaps near the "Add New Plant" link -->
+    <a href="{{ url_for('manage_substations') }}">Manage Grid Substations</a>
+    
     <a href="{{ url_for('add_plant') }}">Add New Plant</a>
     <table>
         <tr>
