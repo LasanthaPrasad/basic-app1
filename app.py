@@ -65,7 +65,7 @@ def create_tables():
         
         # Add some example substations if the table is empty
         if not GridSubList.query.first():
-            substations = ['Substation A', 'Substation B', 'Substation C']
+            substations = ['Substation Aq', 'Substation qB', 'Substation ewC']
             for sub in substations:
                 db.session.add(GridSubList(name=sub))
             db.session.commit()
@@ -73,4 +73,3 @@ def create_tables():
 if __name__ == '__main__':
     create_tables()
     app.run(debug=True)
-    
