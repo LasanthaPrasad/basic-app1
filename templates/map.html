@@ -1,13 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solar Plants Map</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        #map {
+            height: 600px;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        .controls {
+            margin-bottom: 20px;
+        }
+        a {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+        }
+        a:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
 <body>
     <h1>Solar Plants Map</h1>
+    <div class="controls">
+        <label for="filter">Filter by Substation: </label>
+        <select id="filter">
+            <option value="">All Substations</option>
+        </select>
+    </div>
     <div id="map"></div>
+    <a href="{{ url_for('index') }}">Back to Solar Plants List</a>
 
     <script>
         var plantsJson = '{{ plants_json|safe }}';
         var plants = JSON.parse(plantsJson.replace(/&quot;/g, '"'));
+        var markers = [];
+        var map;
 
         function initMap() {
-            var map = new google.maps.Map(document.getElementById('map'), {
+            map = new google.maps.Map(document.getElementById('map'), {
                 zoom: 6,
                 center: {lat: 0, lng: 0}
             });
@@ -22,6 +68,7 @@
                     title: plant.name
                 });
 
+                markers.push(marker);
                 bounds.extend(marker.getPosition());
 
                 google.maps.event.addListener(marker, 'click', function() {
@@ -42,19 +89,36 @@
             if (plants.length > 0) {
                 map.fitBounds(bounds);
             }
+
+            populateFilterOptions();
         }
 
+        function populateFilterOptions() {
+            var filterSelect = document.getElementById('filter');
+            var substations = new Set(plants.map(plant => plant.grid_substation));
+            substations.forEach(function(substation) {
+                var option = document.createElement('option');
+                option.value = substation;
+                option.textContent = substation;
+                filterSelect.appendChild(option);
+            });
 
+            filterSelect.addEventListener('change', filterMarkers);
+        }
 
-
-
-
-
-
-
+        function filterMarkers() {
+            var selectedSubstation = document.getElementById('filter').value;
+            markers.forEach(function(marker, i) {
+                if (selectedSubstation === "" || plants[i].grid_substation === selectedSubstation) {
+                    marker.setVisible(true);
+                } else {
+                    marker.setVisible(false);
+                }
+            });
+        }
     </script>
     <script async defer
         src="https://maps.googleapis.com/maps/api/js?key={{ config['GOOGLE_MAPS_API_KEY'] }}&callback=initMap">
     </script>
-    <a href="{{ url_for('index') }}">Back to Solar Plants List</a>
 </body>
+</html>
