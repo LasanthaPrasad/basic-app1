@@ -14,6 +14,10 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
+class GridSubList(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False, unique=True)
+
 class SolarPlant(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
@@ -24,10 +28,10 @@ class SolarPlant(db.Model):
     max_power = db.Column(db.Float, nullable=False)
     owner_name = db.Column(db.String(100), nullable=False)
     owner_account = db.Column(db.String(50), nullable=False)
-    grid_substation = db.Column(db.String(100), nullable=False)
+    grid_substation_id = db.Column(db.Integer, db.ForeignKey('grid_sub_list.id'), nullable=False)
+    grid_substation = db.relationship('GridSubList', backref=db.backref('solar_plants', lazy=True))
     connected_feeder = db.Column(db.String(100), nullable=False)
 
-# Routes
 @app.route('/')
 def index():
     plants = SolarPlant.query.all()
@@ -35,7 +39,9 @@ def index():
 
 @app.route('/add', methods=['GET', 'POST'])
 def add_plant():
+    substations = GridSubList.query.all()
     if request.method == 'POST':
+        substation = GridSubList.query.get(request.form['grid_substation'])
         new_plant = SolarPlant(
             name=request.form['name'],
             size=float(request.form['size']),
@@ -45,19 +51,26 @@ def add_plant():
             max_power=float(request.form['max_power']),
             owner_name=request.form['owner_name'],
             owner_account=request.form['owner_account'],
-            grid_substation=request.form['grid_substation'],
+            grid_substation=substation,
             connected_feeder=request.form['connected_feeder']
         )
         db.session.add(new_plant)
         db.session.commit()
         return redirect(url_for('index'))
-    return render_template('add_plant.html')
+    return render_template('add_plant.html', substations=substations)
 
-# Database creation
 def create_tables():
     with app.app_context():
         db.create_all()
+        
+        # Add some example substations if the table is empty
+        if not GridSubList.query.first():
+            substations = ['Substation A', 'Substation B', 'Substation C']
+            for sub in substations:
+                db.session.add(GridSubList(name=sub))
+            db.session.commit()
 
 if __name__ == '__main__':
     create_tables()
     app.run(debug=True)
+    

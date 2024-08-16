@@ -9,7 +9,7 @@
             max-width: 500px;
             margin: 0 auto;
         }
-        label, input {
+        label, input, select {
             display: block;
             margin-bottom: 10px;
         }
@@ -46,7 +46,11 @@
         <input type="text" id="owner_account" name="owner_account" required>
 
         <label for="grid_substation">Connected Grid Substation:</label>
-        <input type="text" id="grid_substation" name="grid_substation" required>
+        <select id="grid_substation" name="grid_substation" required>
+            {% for substation in substations %}
+            <option value="{{ substation.id }}">{{ substation.name }}</option>
+            {% endfor %}
+        </select>
 
         <label for="connected_feeder">Connected Feeder:</label>
         <input type="text" id="connected_feeder" name="connected_feeder" required>
