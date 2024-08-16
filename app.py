@@ -1,12 +1,16 @@
-
 import os
 from flask import Flask, render_template, request, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
-#app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://localhost/solar_plants'  # Change this for Heroku
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
 
+# Database configuration
+database_url = os.environ.get('DATABASE_URL')
+if database_url and database_url.startswith("postgres://"):
+    database_url = database_url.replace("postgres://", "postgresql://", 1)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = database_url or 'sqlite:///solar_plants.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
@@ -22,6 +26,8 @@ class SolarPlant(db.Model):
     owner_account = db.Column(db.String(50), nullable=False)
     grid_substation = db.Column(db.String(100), nullable=False)
     connected_feeder = db.Column(db.String(100), nullable=False)
+
+# Routes (your existing route code here)
 
 @app.route('/')
 def index():
@@ -48,5 +54,11 @@ def add_plant():
         return redirect(url_for('index'))
     return render_template('add_plant.html')
 
+# Database creation
+@app.before_first_request
+def create_tables():
+    db.create_all()
+
 if __name__ == '__main__':
     app.run(debug=True)
+    
