@@ -5,13 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Solar Plants and Grid Substations Map</title>
     <style>
-        /* ... (keep existing styles) ... */
-        .chart-container {
-            height: 300px;
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        #map {
+            height: 600px;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        .controls {
+            margin-bottom: 20px;
+        }
+        #chart-container {
+            height: 400px;
             width: 100%;
             margin-top: 20px;
         }
     </style>
+    <!-- Include Chart.js from CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
@@ -25,30 +38,27 @@
         </select>
     </div>
     <div id="map"></div>
-    <div id="chart-container" class="chart-container" style="display: none;">
+    <div id="chart-container" style="display: none;">
         <canvas id="forecast-chart"></canvas>
     </div>
-    <a href="{{ url_for('index') }}">Back to Solar Plants List</a>
 
     <script>
         var plantsJson = '{{ plants_json|safe }}';
         var substationsJson = '{{ substations_json|safe }}';
         var plants = JSON.parse(plantsJson.replace(/&quot;/g, '"'));
         var substations = JSON.parse(substationsJson.replace(/&quot;/g, '"'));
+        var map;
         var plantMarkers = [];
         var substationMarkers = [];
-        var map;
-        var infowindow;
+        var infoWindow;
 
         function initMap() {
             map = new google.maps.Map(document.getElementById('map'), {
-                zoom: 6,
-                center: {lat: 0, lng: 0}
+                zoom: 10,
+                center: {lat: plants[0].latitude, lng: plants[0].longitude}
             });
 
-            infowindow = new google.maps.InfoWindow();
-
-            var bounds = new google.maps.LatLngBounds();
+            infoWindow = new google.maps.InfoWindow();
 
             plants.forEach(function(plant) {
                 var marker = new google.maps.Marker({
@@ -57,22 +67,10 @@
                     title: plant.name,
                     icon: 'http://maps.google.com/mapfiles/ms/icons/green-dot.png'
                 });
-
                 plantMarkers.push(marker);
-                bounds.extend(marker.getPosition());
 
-                google.maps.event.addListener(marker, 'click', function() {
-                    var content = '<div>' +
-                        '<h3>' + plant.name + '</h3>' +
-                        '<p>Size: ' + plant.size + ' KW</p>' +
-                        '<p>Angle: ' + plant.angle + '°</p>' +
-                        '<p>Max Power: ' + plant.max_power + ' KW</p>' +
-                        '<p>Owner: ' + plant.owner_name + '</p>' +
-                        '<p>Substation: ' + plant.grid_substation + '</p>' +
-                        '<p>Feeder: ' + plant.connected_feeder + '</p>' +
-                        '</div>';
-                    infowindow.setContent(content);
-                    infowindow.open(map, marker);
+                marker.addListener('click', function() {
+                    showPlantInfo(plant, marker);
                 });
             });
 
@@ -83,36 +81,46 @@
                     title: substation.name,
                     icon: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png'
                 });
-
                 substationMarkers.push(marker);
-                bounds.extend(marker.getPosition());
 
-                google.maps.event.addListener(marker, 'click', function() {
-                    var content = '<div>' +
-                        '<h3>' + substation.name + '</h3>' +
-                        '<p>Code: ' + substation.code + '</p>' +
-                        '<p>Current Load: ' + substation.current_load + ' MW</p>' +
-                        '<button onclick="showForecast(' + substation.id + ')">Show Forecast</button>' +
-                        '</div>';
-                    infowindow.setContent(content);
-                    infowindow.open(map, marker);
+                marker.addListener('click', function() {
+                    showSubstationInfo(substation, marker);
                 });
             });
-
-            if (plants.length > 0 || substations.length > 0) {
-                map.fitBounds(bounds);
-            }
 
             document.getElementById('filter').addEventListener('change', filterMarkers);
         }
 
+        function showPlantInfo(plant, marker) {
+            var content = '<div>' +
+                '<h3>' + plant.name + '</h3>' +
+                '<p>Size: ' + plant.size + ' KW</p>' +
+                '<p>Max Power: ' + plant.max_power + ' KW</p>' +
+                '<p>Owner: ' + plant.owner_name + '</p>' +
+                '<p>Grid Substation: ' + plant.grid_substation + '</p>' +
+                '</div>';
+            infoWindow.setContent(content);
+            infoWindow.open(map, marker);
+        }
+
+        function showSubstationInfo(substation, marker) {
+            var content = '<div>' +
+                '<h3>' + substation.name + '</h3>' +
+                '<p>Code: ' + substation.code + '</p>' +
+                '<p>Current Load: ' + substation.current_load + ' MW</p>' +
+                '<button onclick="showForecast(' + substation.id + ')">Show Forecast</button>' +
+                '</div>';
+            infoWindow.setContent(content);
+            infoWindow.open(map, marker);
+        }
+
         function filterMarkers() {
-            var selectedFilter = document.getElementById('filter').value;
+            var filter = document.getElementById('filter').value;
             plantMarkers.forEach(function(marker) {
-                marker.setVisible(selectedFilter === 'all' || selectedFilter === 'plants');
+                marker.setVisible(filter === 'all' || filter === 'plants');
             });
             substationMarkers.forEach(function(marker) {
-                marker.setVisible(selectedFilter === 'all' || selectedFilter === 'substations');
+                marker.setVisible(filter === 'all' || filter === 'substations');
             });
         }
 
@@ -124,7 +132,13 @@
             chartContainer.style.display = 'block';
 
             var ctx = document.getElementById('forecast-chart').getContext('2d');
-            var chart = new Chart(ctx, {
+            
+            // Destroy existing chart if it exists
+            if (window.forecastChart instanceof Chart) {
+                window.forecastChart.destroy();
+            }
+
+            window.forecastChart = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: substation.forecasts.map(f => new Date(f.timestamp).toLocaleString()),
