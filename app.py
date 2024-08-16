@@ -127,27 +127,6 @@ def delete_plant(id):
 
 
 
-@app.route('/add', methods=['GET', 'POST'])
-def add_plant():
-    if request.method == 'POST':
-        new_plant = SolarPlant(
-            name=request.form['name'],
-            size=float(request.form['size']),
-            latitude=float(request.form['latitude']),
-            longitude=float(request.form['longitude']),
-            angle=float(request.form['angle']),
-            max_power=float(request.form['max_power']),
-            owner_name=request.form['owner_name'],
-            owner_account=request.form['owner_account'],
-            grid_substation_id=int(request.form['grid_substation']),
-            connected_feeder=request.form['connected_feeder']
-        )
-        db.session.add(new_plant)
-        db.session.commit()
-        flash('New solar plant added successfully!', 'success')
-        return redirect(url_for('index'))
-    substations = GridSubstation.query.all()
-    return render_template('add_plant.html', substations=substations)
 
 @app.route('/map')
 def map_view():
